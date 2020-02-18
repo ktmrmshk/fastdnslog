@@ -23,8 +23,6 @@ class logkit(object):
         self.df.to_sql(tablename, con=self.eng, if_exists=if_exists, chunksize=1000)
 
 
-
-
 class fastdnslog(logkit):
     def __init__(self):
         super().__init__()
@@ -53,7 +51,26 @@ class zonefiler(logkit):
         names = ['record', 'ttl', 'class', 'type', 'val']
         self.df = pd.read_csv(filename, header=None, comment=';', sep='\t', names=names)
         self.df['record'] = self.df['record'].apply(lambda x: x[:-1])
-    
+
+
+class combined(logkit):
+    def read(self, filename):
+        names=['srcip', 'resv0', 'resv1', 'dtime0', 'dtime1', 'req', 'status', 'size', 'referer', 'ua', 'cookie', 'waf']
+        df=pd.read_csv(filename, header=None, sep=' ', names=names, na_values='-')
+        df['dtime']=df['dtime0'].apply(lambda x: datetime.strptime(x, '[%d/%b/%Y:%H:%M:%S'))
+        df['method']=df['req'].apply(lambda x: x.split(' ')[0])
+        df['url']=df['req'].apply(lambda x: x.split(' ')[1])
+        df['HTTPver']=df['req'].apply(lambda x: x.split(' ')[2])
+
+        del df['resv0']
+        del df['resv1']
+        del df['dtime0']
+        del df['dtime1']
+        del df['req']
+
+        self.df=df.loc[:,['dtime', 'srcip', 'status', 'method', 'url', 'HTTPver', 'referer', 'ua', 'cookie', 'waf']]
+
+
 def do_test1():
     f=fastdnslog()
     #f.read('samplelog.gz')
@@ -63,13 +80,17 @@ def do_test1():
     f.init_engine()
     f.push('foobar')
 
-def do_test():
+def do_test2():
     z=zonefiler()
     z.read('example.zone')
     z.init_engine()
     z.push('zone_sgn_suntory_co_jp')
 
-
+def do_test():
+    c=combined()
+    c.read('example_combined.gz')
+    c.init_engine()
+    c.push('clab')
 
 
 if __name__ == '__main__':
