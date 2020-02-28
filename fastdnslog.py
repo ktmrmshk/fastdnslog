@@ -30,7 +30,7 @@ class fastdnslog(logkit):
     def read(self, filename):
         names=['subinfo', 'srcip', 'srcport', 'record', 'class', 'type', 'e0flag', 'e0size','dsecflag','tcpflag','res']
 
-        self.df = pd.read_csv(filename, header=None, names=names)
+        self.df = pd.read_csv(filename, header=None, names=names, low_memory=False)
 
         self.df['zoneid'] = self.df['subinfo'].apply(lambda x: int( x.split(' ')[0] ))
         self.df['utime'] = self.df['subinfo'].apply(lambda x: int( x.split(' ')[2] ))
@@ -49,7 +49,7 @@ class zonefiler(logkit):
 
     def read(self, filename):
         names = ['record', 'ttl', 'class', 'type', 'val']
-        self.df = pd.read_csv(filename, header=None, comment=';', sep='\t', names=names)
+        self.df = pd.read_csv(filename, header=None, comment=';', sep='\s+', names=names)
         self.df['record'] = self.df['record'].apply(lambda x: x[:-1])
 
 
